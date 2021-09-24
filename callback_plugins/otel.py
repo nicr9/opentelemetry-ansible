@@ -56,8 +56,20 @@ class CallbackModule(CallbackBase):
         )
 
     def v2_playbook_on_stats(self, stats):
-        self.traces['playbook'].end()
+        if 'task' in self.traces:
+            self.traces['task'].end()
+        if 'playbook' in self.traces:
+            self.traces['playbook'].end()
 
         span_context = self.traces['playbook'].get_span_context()
         trace_id = trace.format_trace_id(span_context.trace_id)
         self._display.banner(f"TRACE ID [{trace_id}]")
+
+    def v2_playbook_on_task_start(self, task, is_conditional):
+        if 'task' in self.traces:
+            self.traces['task'].end()
+
+        self.traces['task'] = self.tracer.start_span(
+            str(task),
+            context=trace.set_span_in_context(self.traces['playbook']),
+        )
