@@ -3,3 +3,6 @@
   tasks:
     - debug:
         msg: 'Hello, World!'
+      environment:
+        FOO: bar
+        FIZZ: bang

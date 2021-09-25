@@ -21,6 +21,19 @@ description:
 '''
 
 
+def set_task_attrs(span, task):
+    span.set_attribute('task.action', task.action)
+
+    for key, val in task.args.items():
+        span.set_attribute(f'task.args.{key}', str(val))
+
+    environment = task.environment[0] if len(task.environment) > 0 else {}
+    for env, var in environment.items():
+        span.set_attribute(f'task.environment.{env}', var)
+
+    return span
+
+
 class CallbackModule(CallbackBase):
     """
     This callback module instruments playbooks, plays, tasks, etc
@@ -69,7 +82,9 @@ class CallbackModule(CallbackBase):
         if 'task' in self.traces:
             self.traces['task'].end()
 
-        self.traces['task'] = self.tracer.start_span(
+        span = self.tracer.start_span(
             str(task),
             context=trace.set_span_in_context(self.traces['playbook']),
         )
+        span = set_task_attrs(span, task)
+        self.traces['task'] = span
