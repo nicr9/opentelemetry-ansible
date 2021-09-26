@@ -27,7 +27,7 @@ def set_task_attrs(span, task):
     for key, val in task.args.items():
         span.set_attribute(f'task.args.{key}', str(val))
 
-    environment = task.environment[0] if len(task.environment) > 0 else {}
+    environment = {k: v for d in task.environment for k, v in d.items()}
     for env, var in environment.items():
         span.set_attribute(f'task.environment.{env}', var)
 
