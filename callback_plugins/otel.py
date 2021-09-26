@@ -60,31 +60,31 @@ class CallbackModule(CallbackBase):
         self.context = trace.set_span_in_context(None)
 
         self.tracer = trace.get_tracer(__name__)
-        self.traces = {}
+        self.active_spans = {}
 
     def v2_playbook_on_start(self, playbook):
-        self.traces['playbook'] = self.tracer.start_span(
+        self.active_spans['playbook'] = self.tracer.start_span(
             path_join(basename(playbook._basedir), playbook._file_name),
             context=self.context
         )
 
     def v2_playbook_on_stats(self, stats):
-        if 'task' in self.traces:
-            self.traces['task'].end()
-        if 'playbook' in self.traces:
-            self.traces['playbook'].end()
+        if 'task' in self.active_spans:
+            self.active_spans['task'].end()
+        if 'playbook' in self.active_spans:
+            self.active_spans['playbook'].end()
 
-        span_context = self.traces['playbook'].get_span_context()
+        span_context = self.active_spans['playbook'].get_span_context()
         trace_id = trace.format_trace_id(span_context.trace_id)
         self._display.banner(f"TRACE ID [{trace_id}]")
 
     def v2_playbook_on_task_start(self, task, is_conditional):
-        if 'task' in self.traces:
-            self.traces['task'].end()
+        if 'task' in self.active_spans:
+            self.active_spans['task'].end()
 
         span = self.tracer.start_span(
             str(task),
-            context=trace.set_span_in_context(self.traces['playbook']),
+            context=trace.set_span_in_context(self.active_spans['playbook']),
         )
         span = set_task_attrs(span, task)
-        self.traces['task'] = span
+        self.active_spans['task'] = span
