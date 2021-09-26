@@ -21,6 +21,10 @@ description:
 '''
 
 
+def set_play_attrs(span, play):
+    return span
+
+
 def set_task_attrs(span, task):
     span.set_attribute('task.action', task.action)
 
@@ -68,15 +72,18 @@ class CallbackModule(CallbackBase):
             context=self.context
         )
 
-    def v2_playbook_on_stats(self, stats):
+    def v2_playbook_on_play_start(self, play):
         if 'task' in self.active_spans:
             self.active_spans['task'].end()
-        if 'playbook' in self.active_spans:
-            self.active_spans['playbook'].end()
+        if 'play' in self.active_spans:
+            self.active_spans['play'].end()
 
-        span_context = self.active_spans['playbook'].get_span_context()
-        trace_id = trace.format_trace_id(span_context.trace_id)
-        self._display.banner(f"TRACE ID [{trace_id}]")
+        span = self.tracer.start_span(
+            f'PLAY: {play}',
+            context=trace.set_span_in_context(self.active_spans['playbook']),
+        )
+        span = set_play_attrs(span, play)
+        self.active_spans['play'] = span
 
     def v2_playbook_on_task_start(self, task, is_conditional):
         if 'task' in self.active_spans:
@@ -84,7 +91,19 @@ class CallbackModule(CallbackBase):
 
         span = self.tracer.start_span(
             str(task),
-            context=trace.set_span_in_context(self.active_spans['playbook']),
+            context=trace.set_span_in_context(self.active_spans['play']),
         )
         span = set_task_attrs(span, task)
         self.active_spans['task'] = span
+
+    def v2_playbook_on_stats(self, stats):
+        if 'task' in self.active_spans:
+            self.active_spans['task'].end()
+        if 'play' in self.active_spans:
+            self.active_spans['play'].end()
+        if 'playbook' in self.active_spans:
+            self.active_spans['playbook'].end()
+
+        span_context = self.active_spans['playbook'].get_span_context()
+        trace_id = trace.format_trace_id(span_context.trace_id)
+        self._display.banner(f"TRACE ID [{trace_id}]")
