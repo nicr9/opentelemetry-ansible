@@ -22,6 +22,14 @@ description:
 
 
 def set_play_attrs(span, play):
+    span.set_attribute('play.hosts', str(play.hosts))
+
+    for env, var in play.environment.items():
+        span.set_attribute(f'environment.{env}', var)
+
+    for key, val in play.vars.items():
+        span.set_attribute(f'vars.{key}', str(val))
+
     return span
 
 
@@ -33,7 +41,7 @@ def set_task_attrs(span, task):
 
     environment = {k: v for d in task.environment for k, v in d.items()}
     for env, var in environment.items():
-        span.set_attribute(f'task.environment.{env}', var)
+        span.set_attribute(f'environment.{env}', var)
 
     return span
 
