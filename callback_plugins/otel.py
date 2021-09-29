@@ -46,6 +46,10 @@ def set_task_attrs(span, task):
     return span
 
 
+def set_runner_attrs(span, host, task):
+    return span
+
+
 class CallbackModule(CallbackBase):
     """
     This callback module instruments playbooks, plays, tasks, etc
@@ -81,6 +85,8 @@ class CallbackModule(CallbackBase):
         )
 
     def v2_playbook_on_play_start(self, play):
+        if 'runner' in self.active_spans:
+            self.active_spans['runner'].end()
         if 'task' in self.active_spans:
             self.active_spans['task'].end()
         if 'play' in self.active_spans:
@@ -94,6 +100,8 @@ class CallbackModule(CallbackBase):
         self.active_spans['play'] = span
 
     def v2_playbook_on_task_start(self, task, is_conditional):
+        if 'runner' in self.active_spans:
+            self.active_spans['runner'].end()
         if 'task' in self.active_spans:
             self.active_spans['task'].end()
 
@@ -104,7 +112,20 @@ class CallbackModule(CallbackBase):
         span = set_task_attrs(span, task)
         self.active_spans['task'] = span
 
+    def v2_runner_on_start(self, host, task):
+        if 'runner' in self.active_spans:
+            self.active_spans['runner'].end()
+
+        span = self.tracer.start_span(
+            f'{str(task)} [{host}]',
+            context=trace.set_span_in_context(self.active_spans['task']),
+        )
+        span = set_runner_attrs(span, host, task)
+        self.active_spans['runner'] = span
+
     def v2_playbook_on_stats(self, stats):
+        if 'runner' in self.active_spans:
+            self.active_spans['runner'].end()
         if 'task' in self.active_spans:
             self.active_spans['task'].end()
         if 'play' in self.active_spans:
