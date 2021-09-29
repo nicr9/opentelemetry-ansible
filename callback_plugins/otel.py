@@ -5,6 +5,8 @@ from ansible.plugins.callback import CallbackBase
 
 from opentelemetry import trace
 from opentelemetry.exporter.jaeger.thrift import JaegerExporter
+from opentelemetry.trace.status import Status, StatusCode
+
 from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
@@ -122,6 +124,17 @@ class CallbackModule(CallbackBase):
         )
         span = set_runner_attrs(span, host, task)
         self.active_spans['runner'] = span
+
+    def v2_runner_on_failed(self, result, ignore_errors=False):
+        attrs = {}
+        attrs["exception.message"] = result._result['msg']
+
+        span = self.active_spans['runner']
+        span.add_event(name="exception", attributes=attrs)
+        span.set_status(Status(status_code=StatusCode.ERROR))
+
+        if 'runner' in self.active_spans:
+            self.active_spans['runner'].end()
 
     def v2_playbook_on_stats(self, stats):
         if 'runner' in self.active_spans:

@@ -1,8 +1,16 @@
 - hosts: localhost
+  name: otel callback test play
   connection: local
+  environment:
+    FOO: test
+  vars:
+    test: failed
   tasks:
     - debug:
         msg: 'Hello, World!'
       environment:
         FOO: bar
         FIZZ: bang
+    - assert:
+        that:
+        - test == 'passed'
