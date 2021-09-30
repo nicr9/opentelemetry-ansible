@@ -26,7 +26,8 @@ description:
 def set_play_attrs(span, play):
     span.set_attribute('play.hosts', str(play.hosts))
 
-    for env, var in play.environment.items():
+    environment = play.environment or {}
+    for env, var in environment.items():
         span.set_attribute(f'environment.{env}', var)
 
     for key, val in play.vars.items():
