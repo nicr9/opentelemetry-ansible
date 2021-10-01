@@ -89,11 +89,11 @@ class CallbackModule(CallbackBase):
 
     def v2_playbook_on_play_start(self, play):
         if 'runner' in self.active_spans:
-            self.active_spans['runner'].end()
+            self.active_spans.pop('runner').end()
         if 'task' in self.active_spans:
-            self.active_spans['task'].end()
+            self.active_spans.pop('task').end()
         if 'play' in self.active_spans:
-            self.active_spans['play'].end()
+            self.active_spans.pop('play').end()
 
         span = self.tracer.start_span(
             f'PLAY: {play}',
@@ -104,9 +104,9 @@ class CallbackModule(CallbackBase):
 
     def v2_playbook_on_task_start(self, task, is_conditional):
         if 'runner' in self.active_spans:
-            self.active_spans['runner'].end()
+            self.active_spans.pop('runner').end()
         if 'task' in self.active_spans:
-            self.active_spans['task'].end()
+            self.active_spans.pop('task').end()
 
         span = self.tracer.start_span(
             str(task),
@@ -117,7 +117,7 @@ class CallbackModule(CallbackBase):
 
     def v2_runner_on_start(self, host, task):
         if 'runner' in self.active_spans:
-            self.active_spans['runner'].end()
+            self.active_spans.pop('runner').end()
 
         span = self.tracer.start_span(
             f'{str(task)} [{host}]',
@@ -135,17 +135,17 @@ class CallbackModule(CallbackBase):
         span.set_status(Status(status_code=StatusCode.ERROR))
 
         if 'runner' in self.active_spans:
-            self.active_spans['runner'].end()
+            self.active_spans.pop('runner').end()
 
     def v2_playbook_on_stats(self, stats):
         if 'runner' in self.active_spans:
-            self.active_spans['runner'].end()
+            self.active_spans.pop('runner').end()
         if 'task' in self.active_spans:
-            self.active_spans['task'].end()
+            self.active_spans.pop('task').end()
         if 'play' in self.active_spans:
-            self.active_spans['play'].end()
+            self.active_spans.pop('play').end()
         if 'playbook' in self.active_spans:
-            self.active_spans['playbook'].end()
+            self.active_spans.pop('playbook').end()
 
         span_context = self.active_spans['playbook'].get_span_context()
         trace_id = trace.format_trace_id(span_context.trace_id)
